@@ -26,14 +26,14 @@
     "dev": "rollup -c -w --bundleConfigAsCjs=false"
   },
   "devDependencies": {
-    "@electron-forge/async-ora": "^6.0.0",
-    "@electron-forge/publisher-base": "^6.0.0",
     "@rollup/plugin-typescript": "^8.5.0",
     "@types/ali-oss": "^6.16.4",
     "rollup": "^3.0.0",
     "typescript": "^4.8.3"
   },
   "dependencies": {
+    "@electron-forge/async-ora": "^6.0.0",
+    "@electron-forge/publisher-base": "^6.0.0",
     "ali-oss": "^6.17.1"
   }
 }
