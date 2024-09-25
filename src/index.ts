@@ -1,7 +1,6 @@
 import path from 'path'
 import OSS from 'ali-oss'
-import PublisherBase, { PublisherOptions } from '@electron-forge/publisher-base'
-import { asyncOra } from '@electron-forge/async-ora'
+import {PublisherOptions, PublisherStatic,} from '@electron-forge/publisher-static';
 
 import { PublisherOssConfig } from './config'
 
@@ -28,10 +27,10 @@ type Releases = {
   }
 }
 
-export default class PublisherOss extends PublisherBase<PublisherOssConfig> {
+export default class PublisherOss extends PublisherStatic<PublisherOssConfig> {
   name = 'oss'
 
-  async publish({ makeResults }: PublisherOptions) {
+  async publish({makeResults, setStatusLine}: PublisherOptions): Promise<void> {
     const { config } = this
     const ossClient = new OSS(config)
     const artifacts: OssArtifact[] = []
@@ -50,29 +49,29 @@ export default class PublisherOss extends PublisherBase<PublisherOssConfig> {
     let uploaded = 0
     let releaseArtifact: any
     const details: string[] = []
-    const spinnerText = () => `Uploading Artifacts ${uploaded}/${artifacts.length}\n  ${details.join('\t')}`
-    await asyncOra(spinnerText(), async (uploadSpinner) => {
-      await Promise.all(artifacts.map(async (artifact, i) => {
-        const name = this.generateName(artifact)
-        const artifactPath = artifact.path
-        const basename = path.basename(artifactPath)
-        const extname = path.extname(artifactPath)
+    const updateStatusLine = () => setStatusLine(`Uploading Artifacts ${uploaded}/${artifacts.length}\n  ${details.join('\t')}`);
 
-        await ossClient.multipartUpload(name, artifactPath, {
-          progress: (p) => {
-            details[i] = `<${basename}>: ${Math.round(p * 100)}%`
+    updateStatusLine();
+    await Promise.all(artifacts.map(async (artifact, i) => {
+      const name = this.generateName(artifact)
+      const artifactPath = artifact.path
+      const basename = path.basename(artifactPath)
+      const extname = path.extname(artifactPath)
 
-            uploadSpinner.text = spinnerText()
-          }
-        })
-        uploaded += 1
-        details[i] = `<${basename}>: 100%`
-        uploadSpinner.text = spinnerText()
-        if (extname && ['.dmg', '.exe'].includes(extname)) {
-          releaseArtifact = artifact
+      await ossClient.multipartUpload(name, artifactPath, {
+        progress: (p: number) => {
+          details[i] = `<${basename}>: ${Math.round(p * 100)}%`
+          updateStatusLine();
         }
-      }))
-    })
+      })
+      uploaded += 1
+      details[i] = `<${basename}>: 100%`
+      updateStatusLine();
+      if (extname && ['.dmg', '.exe'].includes(extname)) {
+        releaseArtifact = artifact
+      }
+    }))
+
     if (releaseArtifact) {
       this.setRelease(ossClient, releaseArtifact)
     }
@@ -119,3 +118,5 @@ export default class PublisherOss extends PublisherBase<PublisherOssConfig> {
     }
   }
 }
+
+export {PublisherOss};
